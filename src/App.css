@@ -451,6 +451,172 @@ h1 {
   opacity: 0.36;
 }
 
+.print-summary {
+  width: min(100%, 520px);
+  margin: 0 auto 24px;
+  padding: 14px;
+  border: 1px solid rgba(254, 215, 102, 0.22);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(254, 215, 102, 0.22), transparent 32%),
+    linear-gradient(rgba(4, 8, 20, 0.72), rgba(4, 8, 20, 0.86));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.print-hero {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.print-hero span {
+  color: rgba(248, 245, 233, 0.72);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.print-champion-flag {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  overflow: hidden;
+  border: 3px solid rgba(254, 215, 102, 0.8);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 8px rgba(254, 215, 102, 0.08), 0 18px 36px rgba(0, 0, 0, 0.34);
+}
+
+.print-champion-flag img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.print-champion-flag strong {
+  color: rgba(248, 245, 233, 0.7);
+  font-size: 1.8rem;
+}
+
+.print-hero h2 {
+  margin: 0;
+  color: #fed766;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 1.5rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.print-rounds {
+  display: grid;
+  gap: 7px;
+}
+
+.print-round {
+  padding: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.print-round h3 {
+  margin: 0 0 5px;
+  color: #fff9ea;
+  font-size: 0.64rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.print-match-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.print-final .print-match-grid,
+.print-sf .print-match-grid {
+  grid-template-columns: 1fr;
+}
+
+.print-match-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 4px;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 3px;
+  border-radius: 999px;
+  background: rgba(6, 18, 37, 0.58);
+}
+
+.print-team {
+  display: inline-grid;
+  grid-template-columns: 17px auto;
+  gap: 3px;
+  align-items: center;
+  min-width: 0;
+  padding: 2px 4px 2px 2px;
+  border-radius: 999px;
+  color: rgba(248, 245, 233, 0.78);
+}
+
+.print-team:last-child {
+  grid-template-columns: auto 17px;
+  padding: 2px 2px 2px 4px;
+}
+
+.print-team:last-child img,
+.print-team:last-child .print-empty-flag {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.print-team:last-child strong {
+  grid-column: 1;
+  grid-row: 1;
+  text-align: right;
+}
+
+.print-team img,
+.print-empty-flag {
+  width: 17px;
+  height: 17px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.print-empty-flag {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.print-team strong {
+  overflow: hidden;
+  font-size: 0.55rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+}
+
+.print-team.selected {
+  color: #061225;
+  background: linear-gradient(135deg, #fed766, #ffb42d);
+}
+
+.print-score {
+  min-width: 26px;
+  color: rgba(248, 245, 233, 0.64);
+  font-size: 0.53rem;
+  font-weight: 950;
+  text-align: center;
+}
+
 @media (max-width: 860px) {
   .page-shell {
     padding: 14px;
@@ -506,5 +672,107 @@ h1 {
   .winner-spotlight {
     max-width: 220px;
     margin: 0 auto;
+  }
+
+  .print-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 520px) {
+  .page-shell:has(.print-summary) {
+    padding: 8px;
+  }
+
+  .page-shell:has(.print-summary) .hero-panel {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .page-shell:has(.print-summary) .hero-copy p,
+  .page-shell:has(.print-summary) .champion-card,
+  .page-shell:has(.print-summary) .source-note {
+    display: none;
+  }
+
+  .page-shell:has(.print-summary) h1 {
+    font-size: 1.85rem;
+  }
+
+  .page-shell:has(.print-summary) .eyebrow {
+    margin-bottom: 6px;
+    font-size: 0.56rem;
+  }
+
+  .page-shell:has(.print-summary) .hero-actions {
+    gap: 6px;
+  }
+
+  .page-shell:has(.print-summary) .hero-actions button {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 0.78rem;
+  }
+
+  .print-summary {
+    margin-top: 8px;
+    margin-bottom: 0;
+    padding: 10px;
+    border-radius: 22px;
+  }
+
+  .print-champion-flag {
+    width: 54px;
+    height: 54px;
+  }
+
+  .print-hero h2 {
+    font-size: 1.18rem;
+  }
+
+  .print-rounds {
+    gap: 5px;
+  }
+
+  .print-round {
+    padding: 5px;
+    border-radius: 13px;
+  }
+
+  .print-round h3 {
+    margin-bottom: 3px;
+    font-size: 0.54rem;
+  }
+
+  .print-match-grid {
+    gap: 3px;
+  }
+
+  .print-match-row {
+    min-height: 20px;
+    gap: 2px;
+  }
+
+  .print-team {
+    grid-template-columns: 14px auto;
+  }
+
+  .print-team:last-child {
+    grid-template-columns: auto 14px;
+  }
+
+  .print-team img,
+  .print-empty-flag {
+    width: 14px;
+    height: 14px;
+  }
+
+  .print-team strong {
+    font-size: 0.48rem;
+  }
+
+  .print-score {
+    min-width: 22px;
+    font-size: 0.47rem;
   }
 }

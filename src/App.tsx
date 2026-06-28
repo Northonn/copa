@@ -183,6 +183,7 @@ function App() {
   const [winners, setWinners] = useState<Winners>(initial?.winners ?? {})
   const [scores, setScores] = useState<Scores>(initial?.scores ?? {})
   const [showScores, setShowScores] = useState(false)
+  const [printMode, setPrintMode] = useState(false)
   const [shareLabel, setShareLabel] = useState('Compartilhar palpite')
 
   const rounds = buildMatches(winners)
@@ -264,6 +265,9 @@ function App() {
         </div>
 
         <div className="hero-actions">
+          <button className="ghost-button print-toggle" type="button" onClick={() => setPrintMode((value) => !value)}>
+            {printMode ? 'Mapa interativo' : 'Modo print'}
+          </button>
           <button className="ghost-button" type="button" onClick={() => setShowScores((value) => !value)}>
             {showScores ? 'Ocultar placares' : 'Informar placares'}
           </button>
@@ -283,106 +287,168 @@ function App() {
         Confrontos da rodada de 32 carregados a partir de fonte pública consultada em 28/06/2026.
       </section>
 
-      <section className="bracket" aria-label="Mapa do mata-mata">
-        <div className="bracket-side left-side">
-          <RoundColumn
-            matches={pickMatches(rounds, 'r32', bracketSides.left.r32)}
-            round="r32"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-          <RoundColumn
-            matches={pickMatches(rounds, 'r16', bracketSides.left.r16)}
-            round="r16"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-          <RoundColumn
-            matches={pickMatches(rounds, 'qf', bracketSides.left.qf)}
-            round="qf"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-          <RoundColumn
-            matches={pickMatches(rounds, 'sf', bracketSides.left.sf)}
-            round="sf"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-        </div>
+      {printMode ? (
+        <PrintSummary rounds={rounds} scores={scores} winners={winners} champion={champion} />
+      ) : (
+        <section className="bracket" aria-label="Mapa do mata-mata">
+          <div className="bracket-side left-side">
+            <RoundColumn
+              matches={pickMatches(rounds, 'r32', bracketSides.left.r32)}
+              round="r32"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+            <RoundColumn
+              matches={pickMatches(rounds, 'r16', bracketSides.left.r16)}
+              round="r16"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+            <RoundColumn
+              matches={pickMatches(rounds, 'qf', bracketSides.left.qf)}
+              round="qf"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+            <RoundColumn
+              matches={pickMatches(rounds, 'sf', bracketSides.left.sf)}
+              round="sf"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+          </div>
 
-        <div className="final-center">
-          <section className={`winner-spotlight ${champion ? 'has-champion' : ''}`} aria-live="polite">
-            <span className="spotlight-label">Campeão</span>
-            <div className="champion-flag">
-              {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <span>?</span>}
-            </div>
-            <strong>{champion?.code ?? '---'}</strong>
-          </section>
+          <div className="final-center">
+            <section className={`winner-spotlight ${champion ? 'has-champion' : ''}`} aria-live="polite">
+              <span className="spotlight-label">Campeão</span>
+              <div className="champion-flag">
+                {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <span>?</span>}
+              </div>
+              <strong>{champion?.code ?? '---'}</strong>
+            </section>
 
-          <RoundColumn
-            matches={rounds.final}
-            round="final"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-        </div>
+            <RoundColumn
+              matches={rounds.final}
+              round="final"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+          </div>
 
-        <div className="bracket-side right-side">
-          <RoundColumn
-            matches={pickMatches(rounds, 'sf', bracketSides.right.sf)}
-            round="sf"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-          <RoundColumn
-            matches={pickMatches(rounds, 'qf', bracketSides.right.qf)}
-            round="qf"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-          <RoundColumn
-            matches={pickMatches(rounds, 'r16', bracketSides.right.r16)}
-            round="r16"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-          <RoundColumn
-            matches={pickMatches(rounds, 'r32', bracketSides.right.r32)}
-            round="r32"
-            scores={scores}
-            showScores={showScores}
-            winners={winners}
-            onPick={chooseWinner}
-            onScore={updateScore}
-          />
-        </div>
-      </section>
+          <div className="bracket-side right-side">
+            <RoundColumn
+              matches={pickMatches(rounds, 'sf', bracketSides.right.sf)}
+              round="sf"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+            <RoundColumn
+              matches={pickMatches(rounds, 'qf', bracketSides.right.qf)}
+              round="qf"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+            <RoundColumn
+              matches={pickMatches(rounds, 'r16', bracketSides.right.r16)}
+              round="r16"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+            <RoundColumn
+              matches={pickMatches(rounds, 'r32', bracketSides.right.r32)}
+              round="r32"
+              scores={scores}
+              showScores={showScores}
+              winners={winners}
+              onPick={chooseWinner}
+              onScore={updateScore}
+            />
+          </div>
+        </section>
+      )}
     </main>
+  )
+}
+
+function PrintSummary({
+  rounds,
+  scores,
+  winners,
+  champion,
+}: {
+  rounds: Record<RoundKey, Match[]>
+  scores: Scores
+  winners: Winners
+  champion?: Team
+}) {
+  const printRounds: RoundKey[] = ['final', 'sf', 'qf', 'r16', 'r32']
+
+  return (
+    <section className="print-summary" aria-label="Resumo do palpite para print">
+      <div className="print-hero">
+        <span>Meu palpite Copa 2026</span>
+        <div className="print-champion-flag">
+          {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <strong>?</strong>}
+        </div>
+        <h2>{champion ? `${champion.code} campeão` : 'Campeão em aberto'}</h2>
+      </div>
+
+      <div className="print-rounds">
+        {printRounds.map((round) => (
+          <section className={`print-round print-${round}`} key={round}>
+            <h3>{roundTitles[round]}</h3>
+            <div className="print-match-grid">
+              {rounds[round].map((match) => (
+                <PrintMatchRow key={match.id} match={match} score={scores[match.id]} winnerId={winners[match.id]} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function PrintMatchRow({ match, score, winnerId }: { match: Match; score?: Scores[number]; winnerId?: string }) {
+  return (
+    <div className="print-match-row">
+      <PrintTeam team={match.home} selected={winnerId === match.home?.id} />
+      <span className="print-score">{score?.home || '-'} x {score?.away || '-'}</span>
+      <PrintTeam team={match.away} selected={winnerId === match.away?.id} />
+    </div>
+  )
+}
+
+function PrintTeam({ team, selected }: { team?: Team; selected: boolean }) {
+  return (
+    <span className={`print-team ${selected ? 'selected' : ''}`}>
+      {team ? <img alt="" src={team.flag} /> : <span className="print-empty-flag" />}
+      <strong>{team?.code ?? '---'}</strong>
+    </span>
   )
 }
 
