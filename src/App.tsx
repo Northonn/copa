@@ -410,7 +410,7 @@ function PrintSummary({
   return (
     <section className="print-summary" aria-label="Resumo do palpite para print">
       <div className="print-hero">
-        <span>Meu palpite Copa 2026</span>
+        <span>Meu palpite Copa 2026 - Criado por Northonn Oliveira</span>
         <div className="print-champion-flag">
           {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <strong>?</strong>}
         </div>
