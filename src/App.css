@@ -451,6 +451,19 @@ h1 {
   opacity: 0.36;
 }
 
+.app-copyright {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  justify-content: center;
+  margin: 12px auto 0;
+  padding: 10px 14px;
+  color: rgba(248, 245, 233, 0.66);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
 .print-summary {
   width: min(100%, 520px);
   margin: 0 auto 24px;
@@ -617,6 +630,16 @@ h1 {
   text-align: center;
 }
 
+.print-copyright {
+  margin: 8px 0 0;
+  color: rgba(248, 245, 233, 0.58);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
 @media (max-width: 860px) {
   .page-shell {
     padding: 14px;
@@ -691,7 +714,8 @@ h1 {
 
   .page-shell:has(.print-summary) .hero-copy p,
   .page-shell:has(.print-summary) .champion-card,
-  .page-shell:has(.print-summary) .source-note {
+  .page-shell:has(.print-summary) .source-note,
+  .page-shell:has(.print-summary) .app-copyright {
     display: none;
   }
 
@@ -774,5 +798,10 @@ h1 {
   .print-score {
     min-width: 22px;
     font-size: 0.47rem;
+  }
+
+  .print-copyright {
+    margin-top: 5px;
+    font-size: 0.45rem;
   }
 }

@@ -390,6 +390,11 @@ function App() {
           </div>
         </section>
       )}
+
+      <footer className="app-copyright">
+        <span>(c) 2026 Northonn Oliveira.</span>
+        <span>Todos os direitos reservados pelo desenvolvimento do app.</span>
+      </footer>
     </main>
   )
 }
@@ -410,7 +415,7 @@ function PrintSummary({
   return (
     <section className="print-summary" aria-label="Resumo do palpite para print">
       <div className="print-hero">
-        <span>Meu palpite Copa 2026 - Criado por Northonn Oliveira</span>
+        <span>Meu palpite Copa 2026 - Desenvolvimento (c) Northonn Oliveira</span>
         <div className="print-champion-flag">
           {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <strong>?</strong>}
         </div>
@@ -429,6 +434,7 @@ function PrintSummary({
           </section>
         ))}
       </div>
+      <p className="print-copyright">Todos os direitos reservados pelo desenvolvimento do app.</p>
     </section>
   )
 }
