@@ -133,6 +133,16 @@ const bracketSides = {
   },
 }
 
+const flowOrder: Record<RoundKey, number[]> = {
+  r32: roundOf32.map((match) => match.id),
+  r16: pairings.r16.map(([id]) => id),
+  qf: pairings.qf.map(([id]) => id),
+  sf: pairings.sf.map(([id]) => id),
+  final: pairings.final.map(([id]) => id),
+}
+
+const flowMatchIds = Object.values(flowOrder).flat()
+
 function encodeState(winners: Winners, scores: Scores) {
   const payload = btoa(unescape(encodeURIComponent(JSON.stringify({ winners, scores }))))
   return payload.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
@@ -178,16 +188,25 @@ function pickMatches(rounds: Record<RoundKey, Match[]>, round: RoundKey, ids: nu
   return ids.map((id) => rounds[round].find((match) => match.id === id)).filter((match): match is Match => Boolean(match))
 }
 
+function getFlowMatches(rounds: Record<RoundKey, Match[]>) {
+  const matches = Object.values(rounds).flat()
+  return flowMatchIds
+    .map((id) => matches.find((match) => match.id === id))
+    .filter((match): match is Match => Boolean(match?.home && match.away))
+}
+
 function App() {
   const initial = decodeState(new URLSearchParams(window.location.search).get('p'))
   const [winners, setWinners] = useState<Winners>(initial?.winners ?? {})
   const [scores, setScores] = useState<Scores>(initial?.scores ?? {})
   const [showScores, setShowScores] = useState(false)
   const [printMode, setPrintMode] = useState(false)
+  const [mobileStep, setMobileStep] = useState(0)
   const [shareLabel, setShareLabel] = useState('Compartilhar palpite')
 
   const rounds = buildMatches(winners)
   const champion = teamFromWinner(104, winners)
+  const flowMatches = getFlowMatches(rounds)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -290,105 +309,124 @@ function App() {
       {printMode ? (
         <PrintSummary rounds={rounds} scores={scores} winners={winners} champion={champion} />
       ) : (
-        <section className="bracket" aria-label="Mapa do mata-mata">
-          <div className="bracket-side left-side">
-            <RoundColumn
-              matches={pickMatches(rounds, 'r32', bracketSides.left.r32)}
-              round="r32"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-            <RoundColumn
-              matches={pickMatches(rounds, 'r16', bracketSides.left.r16)}
-              round="r16"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-            <RoundColumn
-              matches={pickMatches(rounds, 'qf', bracketSides.left.qf)}
-              round="qf"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-            <RoundColumn
-              matches={pickMatches(rounds, 'sf', bracketSides.left.sf)}
-              round="sf"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-          </div>
+        <>
+          <MobilePredictionFlow
+            champion={champion}
+            matches={flowMatches}
+            scores={scores}
+            showScores={showScores}
+            step={mobileStep}
+            winners={winners}
+            onBack={() => setMobileStep((value) => Math.max(0, value - 1))}
+            onConfirm={(match, team) => {
+              chooseWinner(match, team)
+              setMobileStep((value) => Math.min(value + 1, flowMatchIds.length))
+            }}
+            onScore={updateScore}
+            onShowPrint={() => setPrintMode(true)}
+            onShare={sharePrediction}
+          />
 
-          <div className="final-center">
-            <section className={`winner-spotlight ${champion ? 'has-champion' : ''}`} aria-live="polite">
-              <span className="spotlight-label">Campeão</span>
-              <div className="champion-flag">
-                {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <span>?</span>}
-              </div>
-              <strong>{champion?.code ?? '---'}</strong>
-            </section>
+          <section className="bracket" aria-label="Mapa do mata-mata">
+            <div className="bracket-side left-side">
+              <RoundColumn
+                matches={pickMatches(rounds, 'r32', bracketSides.left.r32)}
+                round="r32"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+              <RoundColumn
+                matches={pickMatches(rounds, 'r16', bracketSides.left.r16)}
+                round="r16"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+              <RoundColumn
+                matches={pickMatches(rounds, 'qf', bracketSides.left.qf)}
+                round="qf"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+              <RoundColumn
+                matches={pickMatches(rounds, 'sf', bracketSides.left.sf)}
+                round="sf"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+            </div>
 
-            <RoundColumn
-              matches={rounds.final}
-              round="final"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-          </div>
+            <div className="final-center">
+              <section className={`winner-spotlight ${champion ? 'has-champion' : ''}`} aria-live="polite">
+                <span className="spotlight-label">Campeão</span>
+                <div className="champion-flag">
+                  {champion ? <img alt={`Bandeira ${champion.name}`} src={champion.flag} /> : <span>?</span>}
+                </div>
+                <strong>{champion?.code ?? '---'}</strong>
+              </section>
 
-          <div className="bracket-side right-side">
-            <RoundColumn
-              matches={pickMatches(rounds, 'sf', bracketSides.right.sf)}
-              round="sf"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-            <RoundColumn
-              matches={pickMatches(rounds, 'qf', bracketSides.right.qf)}
-              round="qf"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-            <RoundColumn
-              matches={pickMatches(rounds, 'r16', bracketSides.right.r16)}
-              round="r16"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-            <RoundColumn
-              matches={pickMatches(rounds, 'r32', bracketSides.right.r32)}
-              round="r32"
-              scores={scores}
-              showScores={showScores}
-              winners={winners}
-              onPick={chooseWinner}
-              onScore={updateScore}
-            />
-          </div>
-        </section>
+              <RoundColumn
+                matches={rounds.final}
+                round="final"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+            </div>
+
+            <div className="bracket-side right-side">
+              <RoundColumn
+                matches={pickMatches(rounds, 'sf', bracketSides.right.sf)}
+                round="sf"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+              <RoundColumn
+                matches={pickMatches(rounds, 'qf', bracketSides.right.qf)}
+                round="qf"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+              <RoundColumn
+                matches={pickMatches(rounds, 'r16', bracketSides.right.r16)}
+                round="r16"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+              <RoundColumn
+                matches={pickMatches(rounds, 'r32', bracketSides.right.r32)}
+                round="r32"
+                scores={scores}
+                showScores={showScores}
+                winners={winners}
+                onPick={chooseWinner}
+                onScore={updateScore}
+              />
+            </div>
+          </section>
+        </>
       )}
 
       <footer className="app-copyright">
@@ -436,6 +474,139 @@ function PrintSummary({
       </div>
       <p className="print-copyright">Todos os direitos reservados pelo desenvolvimento do app.</p>
     </section>
+  )
+}
+
+function MobilePredictionFlow({
+  matches,
+  winners,
+  scores,
+  showScores,
+  step,
+  champion,
+  onConfirm,
+  onBack,
+  onScore,
+  onShowPrint,
+  onShare,
+}: {
+  matches: Match[]
+  winners: Winners
+  scores: Scores
+  showScores: boolean
+  step: number
+  champion?: Team
+  onConfirm: (match: Match, team: Team) => void
+  onBack: () => void
+  onScore: (matchId: number, side: 'home' | 'away', value: string) => void
+  onShowPrint: () => void
+  onShare: () => void
+}) {
+  const total = flowMatchIds.length
+  const completed = Object.keys(winners).filter((id) => flowMatchIds.includes(Number(id))).length
+  const currentIndex = Math.min(step, Math.max(matches.length - 1, 0))
+  const currentMatch = matches[currentIndex]
+  const currentMatchId = currentMatch?.id
+  const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(currentMatchId ? winners[currentMatchId] : undefined)
+
+  useEffect(() => {
+    setSelectedTeamId(currentMatchId ? winners[currentMatchId] : undefined)
+  }, [currentMatchId, winners])
+
+  if (champion && step >= total) {
+    return (
+      <section className="mobile-flow mobile-flow-complete" aria-label="Palpite finalizado">
+        <span className="mobile-flow-kicker">Palpite completo</span>
+        <div className="mobile-winner-flag">
+          <img alt={`Bandeira ${champion.name}`} src={champion.flag} />
+        </div>
+        <h2>{champion.code} campeão</h2>
+        <p>Seu caminho até a taça está pronto para compartilhar.</p>
+        <div className="mobile-flow-actions">
+          <button className="ghost-button" type="button" onClick={onShowPrint}>Ver resumo</button>
+          <button className="primary-button" type="button" onClick={onShare}>Compartilhar</button>
+        </div>
+      </section>
+    )
+  }
+
+  if (!currentMatch?.home || !currentMatch.away) {
+    return (
+      <section className="mobile-flow" aria-label="Aguardando próximo jogo">
+        <span className="mobile-flow-kicker">Próxima fase</span>
+        <h2>Aguardando vencedores</h2>
+        <p>Confirme os jogos anteriores para liberar o próximo confronto.</p>
+      </section>
+    )
+  }
+
+  const selectedTeam = selectedTeamId === currentMatch.home.id ? currentMatch.home : selectedTeamId === currentMatch.away.id ? currentMatch.away : undefined
+  const progress = Math.min(100, Math.round((completed / total) * 100))
+
+  return (
+    <section className="mobile-flow" aria-label="Fluxo de palpites jogo a jogo">
+      <div className="mobile-progress-head">
+        <span>{roundTitles[currentMatch.round]}</span>
+        <strong>Jogo {Math.min(completed + 1, total)} de {total}</strong>
+      </div>
+      <div className="mobile-progress-bar" aria-hidden="true">
+        <span style={{ width: `${progress}%` }} />
+      </div>
+
+      <article className="mobile-match-card">
+        <div className="mobile-match-meta">
+          <span>{currentMatch.label}</span>
+          <small>{currentMatch.date ? `${currentMatch.date} · ${currentMatch.venue}` : 'Definido pelo seu palpite'}</small>
+        </div>
+
+        <div className="mobile-teams">
+          <MobileTeamChoice team={currentMatch.home} selected={selectedTeamId === currentMatch.home.id} onPick={() => setSelectedTeamId(currentMatch.home?.id)} />
+          <span className="mobile-versus">x</span>
+          <MobileTeamChoice team={currentMatch.away} selected={selectedTeamId === currentMatch.away.id} onPick={() => setSelectedTeamId(currentMatch.away?.id)} />
+        </div>
+
+        {showScores && (
+          <div className="mobile-score-row">
+            <input
+              aria-label={`Placar ${currentMatch.home.name}`}
+              inputMode="numeric"
+              maxLength={2}
+              onChange={(event) => onScore(currentMatch.id, 'home', event.target.value)}
+              placeholder="0"
+              value={scores[currentMatch.id]?.home ?? ''}
+            />
+            <span>placar</span>
+            <input
+              aria-label={`Placar ${currentMatch.away.name}`}
+              inputMode="numeric"
+              maxLength={2}
+              onChange={(event) => onScore(currentMatch.id, 'away', event.target.value)}
+              placeholder="0"
+              value={scores[currentMatch.id]?.away ?? ''}
+            />
+          </div>
+        )}
+
+        <button className="primary-button mobile-confirm" disabled={!selectedTeam} type="button" onClick={() => selectedTeam && onConfirm(currentMatch, selectedTeam)}>
+          Confirmar vencedor
+        </button>
+      </article>
+
+      <div className="mobile-flow-actions">
+        <button className="ghost-button" disabled={step === 0} type="button" onClick={onBack}>Voltar</button>
+        <button className="ghost-button" type="button" onClick={onShowPrint}>Ver resumo</button>
+      </div>
+    </section>
+  )
+}
+
+function MobileTeamChoice({ team, selected, onPick }: { team: Team; selected: boolean; onPick: () => void }) {
+  return (
+    <button className={`mobile-team-choice ${selected ? 'selected' : ''}`} type="button" onClick={onPick}>
+      <img alt={`Bandeira ${team.name}`} src={team.flag} />
+      <strong>{team.code}</strong>
+      <span>{team.name}</span>
+    </button>
   )
 }
 
