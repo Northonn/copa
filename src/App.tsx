@@ -42,6 +42,8 @@ type SharedState = {
   scores?: Scores
 }
 
+type PredictionResult = 'correct' | 'incorrect'
+
 const roundTitles: Record<RoundKey, string> = {
   r32: '16 avos',
   r16: 'Oitavas',
@@ -233,6 +235,18 @@ function calculateScoreSummary(rounds: Record<RoundKey, Match[]>, winners: Winne
       points: summary.points + (hit ? roundPoints[match.round] : 0),
     }
   }, { hits: 0, officialMatches: 0, points: 0 })
+}
+
+function getPredictionResult(matchId: number, winners: Winners): PredictionResult | undefined {
+  const officialWinner = officialWinners[matchId]
+  const pickedWinner = winners[matchId]
+  if (!officialWinner || !pickedWinner) return undefined
+
+  return pickedWinner === officialWinner ? 'correct' : 'incorrect'
+}
+
+function getPredictionResultLabel(result: PredictionResult) {
+  return result === 'correct' ? 'Acertou' : 'Errou'
 }
 
 function App() {
@@ -604,6 +618,7 @@ function MobilePredictionFlow({
   const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(currentMatchId ? winners[currentMatchId] : undefined)
   const winnerLocked = currentMatchId ? lockedWinnerIds.has(currentMatchId) : false
   const scoreLocked = currentMatchId ? lockedScoreIds.has(currentMatchId) : false
+  const predictionResult = currentMatchId ? getPredictionResult(currentMatchId, winners) : undefined
 
   useEffect(() => {
     setSelectedTeamId(currentMatchId ? winners[currentMatchId] : undefined)
@@ -649,10 +664,11 @@ function MobilePredictionFlow({
         <span style={{ width: `${progress}%` }} />
       </div>
 
-      <article className="mobile-match-card">
+      <article className={`mobile-match-card ${predictionResult ? `result-${predictionResult}` : ''}`}>
         <div className="mobile-match-meta">
           <span>{currentMatch.label}</span>
           <small>{winnerLocked ? 'Palpite travado pelo link compartilhado' : currentMatch.date ? `${currentMatch.date} · ${currentMatch.venue}` : 'Definido pelo seu palpite'}</small>
+          {predictionResult && <em className="prediction-result-badge">{getPredictionResultLabel(predictionResult)}</em>}
         </div>
 
         <div className="mobile-teams">
@@ -759,12 +775,14 @@ function RoundColumn({
         {matches.map((match) => {
           const winnerLocked = lockedWinnerIds.has(match.id)
           const scoreLocked = lockedScoreIds.has(match.id)
+          const predictionResult = getPredictionResult(match.id, winners)
 
           return (
-            <article className={`match-card ${winners[match.id] ? 'decided' : ''} ${winnerLocked ? 'locked' : ''}`} key={match.id}>
+            <article className={`match-card ${winners[match.id] ? 'decided' : ''} ${winnerLocked ? 'locked' : ''} ${predictionResult ? `result-${predictionResult}` : ''}`} key={match.id}>
               <div className="match-meta">
                 <span>{match.label}</span>
                 <small>{winnerLocked ? 'Palpite travado' : match.date ? `${match.date} · ${match.venue}` : 'Definido pelo seu palpite'}</small>
+                {predictionResult && <em className="prediction-result-badge">{getPredictionResultLabel(predictionResult)}</em>}
               </div>
 
               <TeamRow
