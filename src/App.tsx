@@ -37,6 +37,11 @@ type ScoreSummary = {
   points: number
 }
 
+type SharedState = {
+  scores?: Scores
+  winners?: Winners
+}
+
 const roundTitles: Record<RoundKey, string> = {
   r32: '16 avos',
   r16: 'Oitavas',
@@ -167,8 +172,10 @@ function decodeState(value: string | null) {
   if (!value) return null
   try {
     const normalized = value.replaceAll('-', '+').replaceAll('_', '/')
-    const json = decodeURIComponent(escape(atob(normalized)))
-    return JSON.parse(json) as { winners?: Winners; scores?: Scores }
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+    const json = decodeURIComponent(escape(atob(padded)))
+    const parsed = JSON.parse(json) as SharedState
+    return parsed && typeof parsed === 'object' ? parsed : null
   } catch {
     return null
   }
@@ -232,13 +239,20 @@ function getLatestOfficialMatch(rounds: Record<RoundKey, Match[]>) {
   return Object.values(rounds).flat().find((match) => match.id === latestMatchId)
 }
 
+function getInitialMobileStep(winners: Winners) {
+  return Object.keys(winners).filter((id) => flowMatchIds.includes(Number(id))).length
+}
+
 function App() {
-  const initial = decodeState(new URLSearchParams(window.location.search).get('p'))
+  const [{ initial, sharedStateParam }] = useState(() => {
+    const param = new URLSearchParams(window.location.search).get('p')
+    return { initial: decodeState(param), sharedStateParam: param }
+  })
   const [winners, setWinners] = useState<Winners>(initial?.winners ?? {})
   const [scores, setScores] = useState<Scores>(initial?.scores ?? {})
-  const [showScores, setShowScores] = useState(false)
+  const [showScores, setShowScores] = useState(Boolean(initial?.scores && Object.keys(initial.scores).length))
   const [printMode, setPrintMode] = useState(false)
-  const [mobileStep, setMobileStep] = useState(0)
+  const [mobileStep, setMobileStep] = useState(getInitialMobileStep(initial?.winners ?? {}))
   const [shareLabel, setShareLabel] = useState('Compartilhar palpite')
 
   const rounds = buildMatches(winners)
@@ -251,12 +265,12 @@ function App() {
     const params = new URLSearchParams(window.location.search)
     if (Object.keys(winners).length || Object.keys(scores).length) {
       params.set('p', encodeState(winners, scores))
-    } else {
+    } else if (!sharedStateParam || initial) {
       params.delete('p')
     }
     const query = params.toString()
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
-  }, [scores, winners])
+  }, [initial, scores, sharedStateParam, winners])
 
   function chooseWinner(match: Match, team?: Team) {
     if (!team || !match.home || !match.away) return
