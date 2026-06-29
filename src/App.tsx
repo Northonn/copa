@@ -37,6 +37,11 @@ type ScoreSummary = {
   points: number
 }
 
+type SharedState = {
+  winners?: Winners
+  scores?: Scores
+}
+
 const roundTitles: Record<RoundKey, string> = {
   r32: '16 avos',
   r16: 'Oitavas',
@@ -169,10 +174,15 @@ function decodeState(value: string | null) {
     const normalized = value.replaceAll('-', '+').replaceAll('_', '/')
     const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
     const json = decodeURIComponent(escape(atob(padded)))
-    return JSON.parse(json) as { winners?: Winners; scores?: Scores }
+    return JSON.parse(json) as SharedState
   } catch {
     return null
   }
+}
+
+function getInitialMobileStep(winners: Winners, shouldSkipPredictions: boolean) {
+  if (!shouldSkipPredictions) return 0
+  return Object.keys(winners).filter((id) => flowMatchIds.includes(Number(id))).length
 }
 
 function teamFromWinner(matchId: number, winners: Winners) {
@@ -226,12 +236,21 @@ function calculateScoreSummary(rounds: Record<RoundKey, Match[]>, winners: Winne
 }
 
 function App() {
-  const initial = decodeState(new URLSearchParams(window.location.search).get('p'))
+  const [{ initial, lockedWinnerIds, lockedScoreIds }] = useState(() => {
+    const initialParam = new URLSearchParams(window.location.search).get('p')
+    const parsed = decodeState(initialParam)
+
+    return {
+      initial: parsed,
+      lockedWinnerIds: new Set(Object.keys(parsed?.winners ?? {}).map(Number)),
+      lockedScoreIds: new Set(Object.keys(parsed?.scores ?? {}).map(Number)),
+    }
+  })
   const [winners, setWinners] = useState<Winners>(initial?.winners ?? {})
   const [scores, setScores] = useState<Scores>(initial?.scores ?? {})
   const [showScores, setShowScores] = useState(false)
   const [printMode, setPrintMode] = useState(false)
-  const [mobileStep, setMobileStep] = useState(0)
+  const [mobileStep, setMobileStep] = useState(getInitialMobileStep(initial?.winners ?? {}, Boolean(initial)))
   const [shareLabel, setShareLabel] = useState('Compartilhar palpite')
 
   const rounds = buildMatches(winners)
@@ -251,7 +270,7 @@ function App() {
   }, [scores, winners])
 
   function chooseWinner(match: Match, team?: Team) {
-    if (!team || !match.home || !match.away) return
+    if (!team || !match.home || !match.away || lockedWinnerIds.has(match.id)) return
 
     setWinners((current) => {
       const next = { ...current, [match.id]: team.id }
@@ -264,7 +283,7 @@ function App() {
             const leftTeam = teamFromWinner(left, next)
             const rightTeam = teamFromWinner(right, next)
             const picked = next[nextMatchId]
-            if (picked && (!leftTeam || !rightTeam || (picked !== leftTeam.id && picked !== rightTeam.id))) {
+            if (picked && !lockedWinnerIds.has(nextMatchId) && (!leftTeam || !rightTeam || (picked !== leftTeam.id && picked !== rightTeam.id))) {
               delete next[nextMatchId]
               changed = true
             }
@@ -277,6 +296,8 @@ function App() {
   }
 
   function updateScore(matchId: number, side: 'home' | 'away', value: string) {
+    if (lockedScoreIds.has(matchId)) return
+
     setScores((current) => {
       const matchScore = current[matchId] ?? { home: '', away: '' }
       return {
@@ -352,6 +373,8 @@ function App() {
             showScores={showScores}
             step={mobileStep}
             winners={winners}
+            lockedScoreIds={lockedScoreIds}
+            lockedWinnerIds={lockedWinnerIds}
             onBack={() => setMobileStep((value) => Math.max(0, value - 1))}
             onConfirm={(match, team) => {
               chooseWinner(match, team)
@@ -370,6 +393,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -379,6 +404,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -388,6 +415,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -397,6 +426,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -417,6 +448,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -429,6 +462,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -438,6 +473,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -447,6 +484,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -456,6 +495,8 @@ function App() {
                 scores={scores}
                 showScores={showScores}
                 winners={winners}
+                lockedScoreIds={lockedScoreIds}
+                lockedWinnerIds={lockedWinnerIds}
                 onPick={chooseWinner}
                 onScore={updateScore}
               />
@@ -538,6 +579,8 @@ function MobilePredictionFlow({
   onScore,
   onShowPrint,
   onShare,
+  lockedScoreIds,
+  lockedWinnerIds,
 }: {
   matches: Match[]
   winners: Winners
@@ -545,6 +588,8 @@ function MobilePredictionFlow({
   showScores: boolean
   step: number
   champion?: Team
+  lockedScoreIds: Set<number>
+  lockedWinnerIds: Set<number>
   onConfirm: (match: Match, team: Team) => void
   onBack: () => void
   onScore: (matchId: number, side: 'home' | 'away', value: string) => void
@@ -557,6 +602,8 @@ function MobilePredictionFlow({
   const currentMatch = matches[currentIndex]
   const currentMatchId = currentMatch?.id
   const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>(currentMatchId ? winners[currentMatchId] : undefined)
+  const winnerLocked = currentMatchId ? lockedWinnerIds.has(currentMatchId) : false
+  const scoreLocked = currentMatchId ? lockedScoreIds.has(currentMatchId) : false
 
   useEffect(() => {
     setSelectedTeamId(currentMatchId ? winners[currentMatchId] : undefined)
@@ -605,19 +652,20 @@ function MobilePredictionFlow({
       <article className="mobile-match-card">
         <div className="mobile-match-meta">
           <span>{currentMatch.label}</span>
-          <small>{currentMatch.date ? `${currentMatch.date} · ${currentMatch.venue}` : 'Definido pelo seu palpite'}</small>
+          <small>{winnerLocked ? 'Palpite travado pelo link compartilhado' : currentMatch.date ? `${currentMatch.date} · ${currentMatch.venue}` : 'Definido pelo seu palpite'}</small>
         </div>
 
         <div className="mobile-teams">
-          <MobileTeamChoice team={currentMatch.home} selected={selectedTeamId === currentMatch.home.id} onPick={() => setSelectedTeamId(currentMatch.home?.id)} />
+          <MobileTeamChoice disabled={winnerLocked} team={currentMatch.home} selected={selectedTeamId === currentMatch.home.id} onPick={() => setSelectedTeamId(currentMatch.home?.id)} />
           <span className="mobile-versus">x</span>
-          <MobileTeamChoice team={currentMatch.away} selected={selectedTeamId === currentMatch.away.id} onPick={() => setSelectedTeamId(currentMatch.away?.id)} />
+          <MobileTeamChoice disabled={winnerLocked} team={currentMatch.away} selected={selectedTeamId === currentMatch.away.id} onPick={() => setSelectedTeamId(currentMatch.away?.id)} />
         </div>
 
         {showScores && (
           <div className="mobile-score-row">
             <input
               aria-label={`Placar ${currentMatch.home.name}`}
+              disabled={scoreLocked}
               inputMode="numeric"
               maxLength={2}
               onChange={(event) => onScore(currentMatch.id, 'home', event.target.value)}
@@ -627,6 +675,7 @@ function MobilePredictionFlow({
             <span>placar</span>
             <input
               aria-label={`Placar ${currentMatch.away.name}`}
+              disabled={scoreLocked}
               inputMode="numeric"
               maxLength={2}
               onChange={(event) => onScore(currentMatch.id, 'away', event.target.value)}
@@ -636,8 +685,8 @@ function MobilePredictionFlow({
           </div>
         )}
 
-        <button className="primary-button mobile-confirm" disabled={!selectedTeam} type="button" onClick={() => selectedTeam && onConfirm(currentMatch, selectedTeam)}>
-          Confirmar vencedor
+        <button className="primary-button mobile-confirm" disabled={!selectedTeam || winnerLocked} type="button" onClick={() => selectedTeam && onConfirm(currentMatch, selectedTeam)}>
+          {winnerLocked ? 'Palpite travado' : 'Confirmar vencedor'}
         </button>
       </article>
 
@@ -649,9 +698,9 @@ function MobilePredictionFlow({
   )
 }
 
-function MobileTeamChoice({ team, selected, onPick }: { team: Team; selected: boolean; onPick: () => void }) {
+function MobileTeamChoice({ disabled, team, selected, onPick }: { disabled: boolean; team: Team; selected: boolean; onPick: () => void }) {
   return (
-    <button className={`mobile-team-choice ${selected ? 'selected' : ''}`} type="button" onClick={onPick}>
+    <button className={`mobile-team-choice ${selected ? 'selected' : ''}`} disabled={disabled} type="button" onClick={onPick}>
       <img alt={`Bandeira ${team.name}`} src={team.flag} />
       <strong>{team.code}</strong>
       <span>{team.name}</span>
@@ -686,12 +735,16 @@ function RoundColumn({
   showScores,
   onPick,
   onScore,
+  lockedScoreIds,
+  lockedWinnerIds,
 }: {
   round: RoundKey
   matches: Match[]
   winners: Winners
   scores: Scores
   showScores: boolean
+  lockedScoreIds: Set<number>
+  lockedWinnerIds: Set<number>
   onPick: (match: Match, team?: Team) => void
   onScore: (matchId: number, side: 'home' | 'away', value: string) => void
 }) {
@@ -703,31 +756,40 @@ function RoundColumn({
       </div>
 
       <div className="match-list">
-        {matches.map((match) => (
-          <article className={`match-card ${winners[match.id] ? 'decided' : ''}`} key={match.id}>
-            <div className="match-meta">
-              <span>{match.label}</span>
-              <small>{match.date ? `${match.date} · ${match.venue}` : 'Definido pelo seu palpite'}</small>
-            </div>
+        {matches.map((match) => {
+          const winnerLocked = lockedWinnerIds.has(match.id)
+          const scoreLocked = lockedScoreIds.has(match.id)
 
-            <TeamRow
-              score={scores[match.id]?.home ?? ''}
-              selected={winners[match.id] === match.home?.id}
-              showScore={showScores}
-              team={match.home}
-              onPick={() => onPick(match, match.home)}
-              onScore={(value) => onScore(match.id, 'home', value)}
-            />
-            <TeamRow
-              score={scores[match.id]?.away ?? ''}
-              selected={winners[match.id] === match.away?.id}
-              showScore={showScores}
-              team={match.away}
-              onPick={() => onPick(match, match.away)}
-              onScore={(value) => onScore(match.id, 'away', value)}
-            />
-          </article>
-        ))}
+          return (
+            <article className={`match-card ${winners[match.id] ? 'decided' : ''} ${winnerLocked ? 'locked' : ''}`} key={match.id}>
+              <div className="match-meta">
+                <span>{match.label}</span>
+                <small>{winnerLocked ? 'Palpite travado' : match.date ? `${match.date} · ${match.venue}` : 'Definido pelo seu palpite'}</small>
+              </div>
+
+              <TeamRow
+                disabled={winnerLocked}
+                scoreDisabled={scoreLocked}
+                score={scores[match.id]?.home ?? ''}
+                selected={winners[match.id] === match.home?.id}
+                showScore={showScores}
+                team={match.home}
+                onPick={() => onPick(match, match.home)}
+                onScore={(value) => onScore(match.id, 'home', value)}
+              />
+              <TeamRow
+                disabled={winnerLocked}
+                scoreDisabled={scoreLocked}
+                score={scores[match.id]?.away ?? ''}
+                selected={winners[match.id] === match.away?.id}
+                showScore={showScores}
+                team={match.away}
+                onPick={() => onPick(match, match.away)}
+                onScore={(value) => onScore(match.id, 'away', value)}
+              />
+            </article>
+          )
+        })}
       </div>
     </section>
   )
@@ -738,6 +800,8 @@ function TeamRow({
   selected,
   showScore,
   score,
+  disabled,
+  scoreDisabled,
   onPick,
   onScore,
 }: {
@@ -745,12 +809,14 @@ function TeamRow({
   selected: boolean
   showScore: boolean
   score: string
+  disabled: boolean
+  scoreDisabled: boolean
   onPick: () => void
   onScore: (value: string) => void
 }) {
   return (
-    <div className={`team-row ${selected ? 'selected' : ''} ${team ? '' : 'empty'}`}>
-      <button type="button" disabled={!team} onClick={onPick}>
+    <div className={`team-row ${selected ? 'selected' : ''} ${disabled ? 'locked' : ''} ${team ? '' : 'empty'}`}>
+      <button type="button" disabled={!team || disabled} onClick={onPick}>
         <span className="team-flag">
           {team ? <img alt="" src={team.flag} /> : <span>{'---'}</span>}
         </span>
@@ -759,7 +825,7 @@ function TeamRow({
       {showScore && (
         <input
           aria-label={`Placar ${team?.name ?? 'pendente'}`}
-          disabled={!team}
+          disabled={!team || scoreDisabled}
           inputMode="numeric"
           maxLength={2}
           onChange={(event) => onScore(event.target.value)}
