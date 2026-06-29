@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { officialScores, officialWinners } from './officialResults'
 
 type Team = {
   id: string
@@ -30,12 +31,26 @@ type RoundKey = 'r32' | 'r16' | 'qf' | 'sf' | 'final'
 type Scores = Record<number, { home: string; away: string }>
 type Winners = Record<number, string>
 
+type ScoreSummary = {
+  hits: number
+  officialMatches: number
+  points: number
+}
+
 const roundTitles: Record<RoundKey, string> = {
   r32: '16 avos',
   r16: 'Oitavas',
   qf: 'Quartas',
   sf: 'Semifinais',
   final: 'Final',
+}
+
+const roundPoints: Record<RoundKey, number> = {
+  r32: 3,
+  r16: 5,
+  qf: 7,
+  sf: 9,
+  final: 11,
 }
 
 const flag = (code: string) => `https://flagcdn.com/w40/${code}.png`
@@ -195,6 +210,28 @@ function getFlowMatches(rounds: Record<RoundKey, Match[]>) {
     .filter((match): match is Match => Boolean(match?.home && match.away))
 }
 
+function calculateScoreSummary(rounds: Record<RoundKey, Match[]>, winners: Winners): ScoreSummary {
+  return Object.values(rounds).flat().reduce<ScoreSummary>((summary, match) => {
+    const officialWinner = officialWinners[match.id]
+    if (!officialWinner) return summary
+
+    const hit = winners[match.id] === officialWinner
+    return {
+      hits: summary.hits + (hit ? 1 : 0),
+      officialMatches: summary.officialMatches + 1,
+      points: summary.points + (hit ? roundPoints[match.round] : 0),
+    }
+  }, { hits: 0, officialMatches: 0, points: 0 })
+}
+
+function getLatestOfficialMatch(rounds: Record<RoundKey, Match[]>) {
+  const officialMatchIds = Object.keys(officialWinners).map(Number).filter((id) => officialWinners[id]).sort((a, b) => a - b)
+  const latestMatchId = officialMatchIds.at(-1)
+  if (!latestMatchId) return undefined
+
+  return Object.values(rounds).flat().find((match) => match.id === latestMatchId)
+}
+
 function App() {
   const initial = decodeState(new URLSearchParams(window.location.search).get('p'))
   const [winners, setWinners] = useState<Winners>(initial?.winners ?? {})
@@ -207,6 +244,8 @@ function App() {
   const rounds = buildMatches(winners)
   const champion = teamFromWinner(104, winners)
   const flowMatches = getFlowMatches(rounds)
+  const scoreSummary = calculateScoreSummary(rounds, winners)
+  const latestOfficialMatch = getLatestOfficialMatch(rounds)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -295,11 +334,15 @@ function App() {
           </button>
         </div>
 
-        <section className="champion-card" aria-live="polite">
-          <span>Seu campeão</span>
-          <strong>{champion?.name ?? 'Ainda em aberto'}</strong>
-          <small>{champion ? 'Palpite completo pronto para compartilhar.' : 'Complete a final para revelar.'}</small>
-        </section>
+        <div className="hero-status">
+          <section className="champion-card" aria-live="polite">
+            <span>Seu campeão</span>
+            <strong>{champion?.name ?? 'Ainda em aberto'}</strong>
+            <small>{champion ? 'Palpite completo pronto para compartilhar.' : 'Complete a final para revelar.'}</small>
+          </section>
+
+          <ScoreCard latestOfficialMatch={latestOfficialMatch} summary={scoreSummary} />
+        </div>
       </header>
 
       <section className="source-note">
@@ -434,6 +477,30 @@ function App() {
         <span>Todos os direitos reservados pelo desenvolvimento do app.</span>
       </footer>
     </main>
+  )
+}
+
+function ScoreCard({ summary, latestOfficialMatch }: { summary: ScoreSummary; latestOfficialMatch?: Match }) {
+  const officialScore = latestOfficialMatch ? officialScores[latestOfficialMatch.id] : undefined
+  const officialWinner = latestOfficialMatch ? teams[officialWinners[latestOfficialMatch.id] ?? ''] : undefined
+  const officialWinnerScore = officialWinner?.id === latestOfficialMatch?.home?.id ? officialScore?.home : officialScore?.away
+  const officialLoserScore = officialWinner?.id === latestOfficialMatch?.home?.id ? officialScore?.away : officialScore?.home
+
+  return (
+    <section className="score-card" aria-live="polite">
+      <span>Sua pontuação</span>
+      <strong>{summary.points} pts</strong>
+      <small>
+        {summary.officialMatches
+          ? `${summary.hits} ${summary.hits === 1 ? 'acerto' : 'acertos'} em ${summary.officialMatches} ${summary.officialMatches === 1 ? 'resultado oficial' : 'resultados oficiais'}`
+          : 'Aguardando resultados oficiais'}
+      </small>
+      {latestOfficialMatch && officialScore && officialWinner && (
+        <em>
+          Último oficial: {officialWinner.code} venceu {officialWinnerScore} x {officialLoserScore}
+        </em>
+      )}
+    </section>
   )
 }
 

@@ -33,6 +33,7 @@
 
 .hero-copy,
 .hero-actions,
+.hero-status,
 .champion-card {
   position: relative;
   z-index: 1;
@@ -106,8 +107,15 @@ h1 {
   transform: translateY(-2px);
 }
 
-.champion-card {
+.hero-status {
   grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.42fr);
+  gap: 12px;
+}
+
+.champion-card,
+.score-card {
   display: flex;
   gap: 16px;
   align-items: center;
@@ -119,14 +127,57 @@ h1 {
 }
 
 .champion-card span,
-.champion-card small {
+.champion-card small,
+.score-card span,
+.score-card small,
+.score-card em {
   color: rgba(248, 245, 233, 0.66);
 }
 
-.champion-card strong {
+.champion-card strong,
+.score-card strong {
   margin-right: auto;
   color: #fed766;
   font-size: clamp(1.2rem, 2.5vw, 1.7rem);
+}
+
+.score-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  border-color: rgba(254, 215, 102, 0.34);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(254, 215, 102, 0.22), transparent 45%),
+    rgba(255, 255, 255, 0.1);
+}
+
+.score-card span {
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.score-card strong {
+  grid-row: span 3;
+  justify-self: end;
+  margin-right: 0;
+  color: #fff9ea;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(2rem, 3.6vw, 3.15rem);
+  line-height: 0.9;
+  text-shadow: 0 12px 28px rgba(254, 215, 102, 0.18);
+}
+
+.score-card small,
+.score-card em {
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.score-card em {
+  color: rgba(254, 215, 102, 0.78);
 }
 
 .source-note {
@@ -663,9 +714,17 @@ h1 {
     flex: 1 1 180px;
   }
 
+  .hero-status {
+    grid-template-columns: 1fr;
+  }
+
   .champion-card {
     display: grid;
     gap: 4px;
+  }
+
+  .score-card {
+    grid-template-columns: 1fr auto;
   }
 
   .source-note {
@@ -942,6 +1001,7 @@ h1 {
 
   .page-shell:has(.print-summary) .hero-copy p,
   .page-shell:has(.print-summary) .champion-card,
+  .page-shell:has(.print-summary) .score-card,
   .page-shell:has(.print-summary) .source-note,
   .page-shell:has(.print-summary) .app-copyright {
     display: none;
